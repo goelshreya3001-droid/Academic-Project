@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mini Health Detector</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-secondary: rgba(255,255,255,0.95);
+            --text-primary: #333;
+            --text-secondary: #555;
+            --card-bg: white;
+            --border-color: #e1e5e9;
+            --primary-color: #e74c3c;
+            --success-color: #56ab2f;
+            --warning-color: #feca57;
+            --danger-color: #ff6b6b;
+            --shadow: rgba(0,0,0,0.1);
+            --gradient-heart: linear-gradient(135deg, #e74c3c, #c0392b);
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+            --chart-text: #333;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: linear-gradient(135deg, #2c3e50 0%, #e74c3c 100%);
+            --bg-secondary: rgba(45,55,72,0.95);
+            --text-primary: #ecf0f1;
+            --text-secondary: #bdc3c7;
+            --card-bg: #2c3e50;
+            --border-color: #34495e;
+            --primary-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --danger-color: #e74c3c;
+            --shadow: rgba(0,0,0,0.4);
+            --gradient-heart: linear-gradient(135deg, #e74c3c, #c0392b);
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+            --chart-text: #ecf0f1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 1000;
+            box-shadow: 0 6px 20px var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.15) rotate(10deg);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: var(--text-primary);
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
+            background: var(--gradient-heart);
+            border-radius: 50% 50% 50% 0;
+            z-index: -1;
+            animation: heartbeat 2s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            14% { transform: translateX(-50%) scale(1.3); }
+            28% { transform: translateX(-50%) scale(1.5); }
+            42% { transform: translateX(-50%) scale(1.3); }
+            70% { transform: translateX(-50%) scale(1); }
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, var(--primary-color), #f39c12, var(--success-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px var(--primary-color)); }
+            to { filter: drop-shadow(0 0 20px var(--primary-color)); }
+        }
+
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            background: var(--card-bg);
+            border-radius: 50px;
+            padding: 8px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 15px 35px var(--shadow);
+            border: 2px solid var(--border-color);
+        }
+
+        .nav-tab {
+            padding: 15px 25px;
+            background: transparent;
+            border: 2px solid transparent;
+            color: var(--text-secondary);
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            margin: 2px;
+        }
+
+        .nav-tab.active {
+            background: var(--gradient-heart);
+            color: white !important;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+        }
+
+        .page {
+            display: none;
+            background: var(--bg-secondary);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 25px 50px var(--shadow);
+            backdrop-filter: blur(15px);
+            border: 2px solid var(--border-color);
+        }
+
+        .page.active {
+            display: block;
+            animation: slideUp 0.6s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* HOME PAGE */
+        .home-content { text-align: center; }
+
+        .motivational-quote {
+            font-size: 1.5rem;
+            font-style: italic;
+            color: var(--primary-color);
+            margin: 30px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(231,76,60,0.1), rgba(192,57,43,0.1));
+            border-radius: 20px;
+            border-left: 6px solid var(--primary-color);
+            box-shadow: 0 10px 30px var(--shadow);
+        }
+
+        .health-icons {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 50px 0;
+            flex-wrap: wrap;
+        }
+
+        .icon-item {
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .icon-item:hover { transform: translateY(-10px) scale(1.1); }
+
+        .icon-item svg {
+            width: 80px;
+            height: 80px;
+            fill: var(--primary-color);
+            margin-bottom: 15px;
+            filter: drop-shadow(0 5px 15px rgba(231,76,60,0.3));
+        }
+
+        /* MISSION CONTROL / QUICK LOG */
+        .mission-control { max-width: 800px; margin: 0 auto; position: relative; }
+
+        .mission-title {
+            text-align: center;
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px var(--primary-color);
+            animation: neon 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes neon {
+            from { text-shadow: 0 0 10px var(--primary-color), 0 0 20px var(--primary-color); }
+            to { text-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--primary-color), 0 0 40px var(--primary-color); }
+        }
+
+        .health-meters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .meter-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px var(--shadow);
+            border: 3px solid transparent;
+            cursor: grab;
+            transition: all 0.3s ease;
+        }
+
+        .meter-card:hover {
+            transform: translateY(-10px) rotate(2deg);
+            border-color: var(--primary-color);
+        }
+
+        .meter-card:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+
+        .meter-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .meter-value {
+            font-size: 4rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .meter-label {
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .mission-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 12px;
+            border-radius: 10px;
+            background: var(--border-color);
+            outline: none;
+            margin: 15px 0;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .mission-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-heart);
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(231,76,60,0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        .mission-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 8px 30px rgba(231,76,60,0.7);
+        }
+
+        .slider-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 6px;
+            background: var(--gradient-heart);
+            border-radius: 3px;
+            transform: translateY(-50%);
+            transition: width 0.3s ease;
+        }
+
+        .emoji-mission {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .emoji-btn {
+            width: 70px;
+            height: 70px;
+            border: 4px solid var(--border-color);
+            border-radius: 50%;
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            background: var(--card-bg);
+            box-shadow: 0 10px 30px var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .emoji-btn:hover {
+            transform: scale(1.3) rotate(360deg);
+            border-color: var(--primary-color);
+        }
+
+        .emoji-btn.active {
+            background: var(--gradient-heart);
+            color: white;
+            border-color: white;
+            transform: scale(1.4);
+            box-shadow: 0 0 40px var(--primary-color);
+            animation: bounce 0.6s ease;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: scale(1.4); }
+            40% { transform: scale(1.45); }
+            60% { transform: scale(1.42); }
+        }
+
+        .launch-btn {
+            display: block;
+            margin: 40px auto 0;
+            padding: 20px 50px;
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(45deg, var(--primary-color), var(--success-color), var(--warning-color));
+            background-size: 300% 300%;
+            animation: gradientShift 3s ease infinite;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 15px 40px rgba(231,76,60,0.5);
+            transition: all 0.4s ease;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .launch-btn:hover {
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 25px 60px rgba(231,76,60,0.7);
+        }
+
+        /* CALENDAR */
+        .calendar-container { max-width: 900px; margin: 0 auto; }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .cal-nav-btn {
+            padding: 10px 20px;
+            background: var(--gradient-heart);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(231,76,60,0.3);
+        }
+
+        .cal-nav-btn:hover { transform: scale(1.05); }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px var(--shadow);
+            position: relative;
+        }
+
+        .calendar-day {
+            padding: 18px 10px;
+            text-align: center;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 700;
+            font-size: 1.1rem;
+            position: relative;
+            color: var(--text-primary);
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.15);
+            box-shadow: 0 10px 30px var(--shadow);
+            z-index: 20;
+        }
+
+        .calendar-day-header {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 700;
+            background: var(--border-color);
+        }
+
+        .calendar-day.empty {
+            color: var(--border-color);
+            cursor: default;
+        }
+
+        .calendar-day.today {
+            background: linear-gradient(135deg, var(--primary-color), var(--danger-color)) !important;
+            color: white !important;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 20px var(--primary-color);
+        }
+
+        .calendar-day.has-entry {
+            background: linear-gradient(135deg, var(--success-color), #27ae60) !important;
+            color: white !important;
+            box-shadow: 0 5px 20px rgba(86,171,47,0.4);
+        }
+
+        .calendar-day.has-entry::after {
+            content: '📊';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 14px;
+        }
+
+        .calendar-day-details {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 30px 60px var(--shadow);
+    min-width: 320px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 10000;
+    border: 4px solid var(--primary-color);
+    color: var(--text-primary);
+    backdrop-filter: blur(25px);
+    display: none;
+}
+
+.calendar-day:hover .calendar-day-details {
+    display: block;
+}
+
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(10px); }
+        }
+
+        .calendar-day-details div {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        /* DASHBOARD */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .progress-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px var(--shadow);
+            border: 2px solid var(--border-color);
+            border-top: 6px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .progress-card:hover { transform: translateY(-10px); }
+
+        .progress-bar {
+            width: 100%;
+            height: 16px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: inset 0 2px 8px var(--shadow);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-heart);
+            border-radius: 10px;
+            transition: width 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, var(--warning-color), var(--primary-color));
+            color: white;
+            padding: 15px 25px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            margin: 15px 0;
+            animation: pulse 2s infinite;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px var(--shadow);
+            margin-top: 30px;
+            height: 400px;
+            border: 2px solid var(--border-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin: 25px 0;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 10px 30px var(--shadow);
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+
+        .stat-card:hover { transform: translateY(-8px); }
+
+        .stat-card h2 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2.2rem; }
+            .nav-tabs { flex-direction: column; gap: 10px; padding: 20px; }
+            .emoji-mission { grid-template-columns: repeat(3, 1fr); }
+            .health-meters { grid-template-columns: 1fr; }
+            .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
+            .calendar-day-details { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 90vw; }
+        }
+    </style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+
+<div class="container">
+    <div class="header">
+        <h1>❤️ Mini Health Detector ❤️</h1>
+        <p>Your personal heartbeat for wellness tracking</p>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showPage(event, 'home')">🏠 Home</button>
+        <button class="nav-tab" onclick="showPage(event, 'entry')">⚡ Quick Log</button>
+        <button class="nav-tab" onclick="showPage(event, 'calendar')">📅 Calendar</button>
+        <button class="nav-tab" onclick="showPage(event, 'dashboard')">📊 Dashboard</button>
+    </div>
+
+    <!-- HOME PAGE -->
+    <div id="home" class="page active">
+        <div class="home-content">
+            <div class="motivational-quote" id="dailyQuote">
+                "The body achieves what the mind believes."
+            </div>
+            <div class="health-icons">
+                <div class="icon-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <p>Track Progress</p>
+                </div>
+                <div class="icon-item">
+                    <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h2v4h2V8h2v4h2V8h2v4h2V8h2v8z"/></svg>
+                    <p>Stay Hydrated</p>
+                </div>
+                <div class="icon-item">
+                    <svg viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h18v8z"/></svg>
+                    <p>Exercise Daily</p>
+                </div>
+                <div class="icon-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <p>Health Insights</p>
+                </div>
+            </div>
+
+            <!-- CHANGED TAGLINE BUTTON HERE -->
+            <button class="launch-btn" onclick="showPage(event, 'entry')">
+                ✨ Start Daily Check-In
+            </button>
+        </div>
+    </div>
+
+    <!-- QUICK LOG / MISSION CONTROL -->
+    <div id="entry" class="page">
+        <div class="mission-control">
+            <h2 class="mission-title">🎯 Daily Health Mission</h2>
+
+            <div class="health-meters">
+                <div class="meter-card">
+                    <div class="meter-icon">💧</div>
+                    <div class="meter-value" id="waterValue">0</div>
+                    <div class="meter-label">Water (16 glasses)</div>
+                    <input type="range" class="mission-slider" id="waterSlider" min="0" max="16" value="0">
+                    <div class="slider-track" id="waterTrack"></div>
+                </div>
+                <div class="meter-card">
+                    <div class="meter-icon">🏃</div>
+                    <div class="meter-value" id="exerciseValue">0</div>
+                    <div class="meter-label">Exercise (120 min)</div>
+                    <input type="range" class="mission-slider" id="exerciseSlider" min="0" max="120" value="0">
+                    <div class="slider-track" id="exerciseTrack"></div>
+                </div>
+                <div class="meter-card">
+                    <div class="meter-icon">😴</div>
+                    <div class="meter-value" id="sleepValue">0</div>
+                    <div class="meter-label">Sleep (10 hrs)</div>
+                    <input type="range" class="mission-slider" id="sleepSlider" min="0" max="10" step="0.5" value="0">
+                    <div class="slider-track" id="sleepTrack"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label style="display:block;text-align:center;font-size:1.5rem;margin-bottom:20px;color:var(--primary-color);">
+                    😃 How are you feeling today?
+                </label>
+                <div class="emoji-mission">
+                    <button type="button" class="emoji-btn" data-mood="excellent">😊</button>
+                    <button type="button" class="emoji-btn" data-mood="good">🙂</button>
+                    <button type="button" class="emoji-btn active" data-mood="neutral">😐</button>
+                    <button type="button" class="emoji-btn" data-mood="bad">🙁</button>
+                    <button type="button" class="emoji-btn" data-mood="terrible">😞</button>
+                </div>
+                <input type="hidden" id="mood" value="neutral">
+            </div>
+
+            <button class="launch-btn" onclick="launchMission()">
+                ✅ Save Today’s Health Log
+            </button>
+        </div>
+    </div>
+
+    <!-- CALENDAR PAGE -->
+    <div id="calendar" class="page">
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <button class="cal-nav-btn" onclick="previousMonth()">⬅️ Prev</button>
+                <h2 id="calendarTitle">Month Year</h2>
+                <button class="cal-nav-btn" onclick="nextMonth()">Next ➡️</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboard" class="page">
+        <h2 style="margin-bottom:30px;color:var(--primary-color);font-size:2.2rem;text-align:center;">
+            📊 Health Detection Dashboard
+        </h2>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="dashboard-grid">
+            <div class="progress-card">
+                <h3>🔥 Current Streak</h3>
+                <div class="streak-badge" id="streakBadge">
+                    <span id="streakCount">0</span> days
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="streakProgress" style="width:0%"></div>
+                </div>
+            </div>
+            <div class="progress-card">
+                <h3>💧 Water Goal</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="waterProgress" style="width:0%"></div>
+                </div>
+                <p id="waterStats">0/8 glasses</p>
+            </div>
+            <div class="progress-card">
+                <h3>😴 Sleep Goal</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="sleepProgress" style="width:0%"></div>
+                </div>
+                <p id="sleepStats">0/8 hours</p>
+            </div>
+            <div class="progress-card">
+                <h3>🏃 Exercise Goal</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="exerciseProgress" style="width:0%"></div>
+                </div>
+                <p id="exerciseStats">0/60 min</p>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="healthChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    let entries = JSON.parse(localStorage.getItem('healthEntries')) || [];
+    let currentStreak = parseInt(localStorage.getItem('streak')) || 0;
+    let points = parseInt(localStorage.getItem('points')) || 0;
+    let healthChart;
+    let currentDate = new Date();
+    let currentMonth = currentDate.getMonth();
+    let currentYear = currentDate.getFullYear();
+    function recomputeStreak() {
+    if (!entries.length) return 0;
+
+    const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+    const today = new Date().toISOString().split('T')[0];
+
+    let streak = 0;
+    let cursor = today;
+
+    for (let i = sorted.length - 1; i >= 0; i--) {
+        const e = sorted[i];
+        if (e.date === cursor) {
+            streak++;
+            const d = new Date(cursor);
+            d.setDate(d.getDate() - 1);
+            cursor = d.toISOString().split('T')[0];
+        } else if (e.date < cursor) {
+            break; // gap – streak stops
+        }
+    }
+
+    return streak;
+}
+
+    function toggleTheme() {
+        const body = document.body;
+        const newTheme = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        body.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        document.querySelector('.theme-toggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        if (healthChart) {
+            updateChart(); // to refresh axis/text colors
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.querySelector('.theme-toggle').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+        setupSliders();
+        setupMoodSelector();
+        showPage(null, 'home');
+        renderCalendar();
+    });
+
+    function setupSliders() {
+        const sliders = ['water', 'exercise', 'sleep'];
+        sliders.forEach(type => {
+            const slider = document.getElementById(type + 'Slider');
+            const value = document.getElementById(type + 'Value');
+            const track = document.getElementById(type + 'Track');
+
+            slider.addEventListener('input', function () {
+                const val = this.value;
+                value.textContent = val;
+                const max = this.max;
+                track.style.width = (val / max * 100) + '%';
+            });
+        });
+    }
+
+    function setupMoodSelector() {
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('mood').value = this.dataset.mood;
+            });
+        });
+    }
+
+    function launchMission() {
+        const water = parseInt(document.getElementById('waterSlider').value);
+        const exercise = parseInt(document.getElementById('exerciseSlider').value);
+        const sleep = parseFloat(document.getElementById('sleepSlider').value);
+        const mood = document.getElementById('mood').value;
+
+        if (water === 0 && exercise === 0 && sleep === 0) {
+            alert('⚠️ Please set at least one value before saving your log.');
+            return;
+        }
+
+        const entryDate = new Date().toISOString().split('T')[0];
+
+        const entry = {
+            id: Date.now(),
+            date: entryDate,
+            mood: mood,
+            energy: mood === 'excellent' ? 'high' : (mood === 'good' ? 'medium' : 'low'),
+            water: water,
+            exercise: exercise,
+            sleep: sleep,
+            exerciseType: exercise > 45 ? 'Running' : 'Yoga',
+            diet: `Log: ${mood} mood, ${water} glasses, ${exercise} min, ${sleep} h sleep`,
+            points: (water * 2) + (exercise * 1) + (sleep * 5) + (mood === 'excellent' ? 20 : 10),
+            timestamp: new Date().toISOString()
+        };
+
+        const already = entries.find(e => e.date === entryDate);
+
+          entries = entries.filter(e => e.date !== entryDate);
+          entries.push(entry);
+
+          points += entry.points;
+
+        // save entries, then recompute streak correctly from all data
+        localStorage.setItem('healthEntries', JSON.stringify(entries));
+        currentStreak = recomputeStreak();
+        localStorage.setItem('streak', currentStreak);
+        localStorage.setItem('points', points);
+
+
+        alert(`🎉 Log saved! +${entry.points} pts\n💧${water} | 🏃${exercise} min | 😴${sleep} h`);
+
+        renderCalendar();
+        updateDashboard();
+        showPage(null, 'dashboard');
+    }
+
+    function showPage(ev, pageId) {
+        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        if (ev && ev.target.classList.contains('nav-tab')) {
+            ev.target.classList.add('active');
+        } else {
+            document
+                .querySelector(`.nav-tab[onclick*="${pageId}"]`)
+                ?.classList.add('active');
+        }
+
+        if (pageId === 'home') {
+            document.getElementById('dailyQuote').textContent = getRandomQuote();
+        } else if (pageId === 'dashboard') {
+            updateDashboard();
+        } else if (pageId === 'calendar') {
+            renderCalendar();
+        }
+    }
+
+    function getRandomQuote() {
+        const quotes = [
+            "The body achieves what the mind believes.",
+            "Your health is an investment, not an expense.",
+            "Small daily improvements lead to big results.",
+            "Take care of your body. It's the only place you have to live."
+        ];
+        return quotes[Math.floor(Math.random() * quotes.length)];
+    }
+
+    function renderCalendar() {
+        const year = currentYear;
+        const month = currentMonth;
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const monthNames = [
+            'January','February','March','April','May','June',
+            'July','August','September','October','November','December'
+        ];
+
+        document.getElementById('calendarTitle').textContent = monthNames[month] + ' ' + year;
+
+        let calendarHTML = '';
+        const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+        weekdays.forEach(day => {
+            calendarHTML += `<div class="calendar-day calendar-day-header">${day}</div>`;
+        });
+
+        for (let i = 0; i < firstDay; i++) {
+            calendarHTML += `<div class="calendar-day empty"></div>`;
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const dayEntry = entries.find(e => e.date === ds);
+            const hasEntry = !!dayEntry;
+            const isToday = ds === new Date().toISOString().split('T')[0];
+
+            let cls = '';
+            if (isToday) cls += ' today';
+            if (hasEntry) cls += ' has-entry';
+
+            calendarHTML += `
+                <div class="calendar-day ${cls.trim()}" data-date="${ds}">
+                    ${d}
+                    <div class="calendar-day-details">
+                        ${
+                            hasEntry
+                                ? `
+                            <div><strong>📅 ${ds}</strong></div>
+                            <div><strong>😃 Mood:</strong> ${dayEntry.mood}</div>
+                            <div><strong>💧 Water:</strong> ${dayEntry.water} glasses</div>
+                            <div><strong>🏃 Exercise:</strong> ${dayEntry.exercise} min</div>
+                            <div><strong>😴 Sleep:</strong> ${dayEntry.sleep} h</div>
+                            <div><strong>⭐ Points:</strong> ${dayEntry.points}</div>
+                            `
+                                : '<div>No entry for this day</div>'
+                        }
+                    </div>
+                </div>
+            `;
+        }
+
+        document.getElementById('calendarGrid').innerHTML = calendarHTML;
+    }
+
+    function previousMonth() {
+        currentMonth--;
+        if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+        renderCalendar();
+    }
+
+    function nextMonth() {
+        currentMonth++;
+        if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+        renderCalendar();
+    }
+
+    function updateDashboard() {
+        const today = new Date().toISOString().split('T')[0];
+        const todayEntry = entries.find(e => e.date === today);
+
+        document.getElementById('streakCount').textContent = currentStreak;
+        document.getElementById('streakProgress').style.width =
+            Math.min((currentStreak / 30) * 100, 100) + '%';
+
+        if (todayEntry) {
+            document.getElementById('waterProgress').style.width =
+                Math.min((todayEntry.water / 8) * 100, 100) + '%';
+            document.getElementById('waterStats').textContent =
+                `${todayEntry.water}/8 glasses`;
+
+            document.getElementById('sleepProgress').style.width =
+                Math.min((todayEntry.sleep / 8) * 100, 100) + '%';
+            document.getElementById('sleepStats').textContent =
+                `${todayEntry.sleep.toFixed(1)}/8 hours`;
+
+            document.getElementById('exerciseProgress').style.width =
+                Math.min((todayEntry.exercise / 60) * 100, 100) + '%';
+            document.getElementById('exerciseStats').textContent =
+                `${todayEntry.exercise}/60 min`;
+        }
+
+        updateStatsGrid();
+        updateChart();
+    }
+
+    function updateStatsGrid() {
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-card">
+                <h4>Total Points</h4>
+                <h2>${points.toLocaleString()}</h2>
+                <p>🎯 Lifetime Score</p>
+            </div>
+            <div class="stat-card">
+                <h4>Total Logs</h4>
+                <h2>${entries.length}</h2>
+                <p>🗓️ Days recorded</p>
+            </div>
+            <div class="stat-card">
+                <h4>Best Streak</h4>
+                <h2>${currentStreak}</h2>
+                <p>🔥 Active days in a row</p>
+            </div>
+        `;
+    }
+
+    function updateChart() {
+        const ctx = document.getElementById('healthChart').getContext('2d');
+        const data = getLast7DaysData();
+        const chartTextColor = getComputedStyle(document.body).getPropertyValue('--chart-text').trim() || '#333';
+
+        if (healthChart) healthChart.destroy();
+
+        healthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Water (glasses)',
+                        data: data.water,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102,126,234,0.2)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Exercise (min)',
+                        data: data.exercise,
+                        borderColor: '#56ab2f',
+                        backgroundColor: 'rgba(86,171,47,0.2)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Sleep (hours)',
+                        data: data.sleep,
+                        borderColor: '#feca57',
+                        backgroundColor: 'rgba(254,202,87,0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: chartTextColor }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: chartTextColor },
+                        grid: { color: 'rgba(200,200,200,0.2)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: chartTextColor },
+                        grid: { color: 'rgba(200,200,200,0.2)' }
+                    }
+                }
+            }
+        });
+    }
+
+    function getLast7DaysData() {
+        const labels = [], water = [], exercise = [], sleep = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const ds = date.toISOString().split('T')[0];
+            labels.push(ds.slice(-5));
+            const dayEntry = entries.find(e => e.date === ds);
+            water.push(dayEntry ? dayEntry.water : 0);
+            exercise.push(dayEntry ? dayEntry.exercise : 0);
+            sleep.push(dayEntry ? dayEntry.sleep : 0);
+        }
+        return { labels, water, exercise, sleep };
+    }
+</script>
+</body>
+</html>
